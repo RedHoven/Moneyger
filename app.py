@@ -1,13 +1,14 @@
-from cgitb import text
 import curses
 from datetime import datetime
 import logging
-from nis import cat
+from parsers import update_sum_text,update_text
 
 logging.basicConfig(filename='moneyger.log', filemode='w', level=logging.DEBUG)
 log = logging.getLogger(__file__)
 
 KEYS = {
+    'minus' : 45,
+    'plus' : 61,
     'insert':ord('i'),
     'enter': 10,
     'delete' : 127,
@@ -88,8 +89,36 @@ class App:
                 break
             elif key == KEYS['enter']:
                 self.add_request(string)
+            elif key == KEYS['plus']:
+                self.input_win.clear()
+                self.input_win.addstr('+'+string)
+                self.input_win.refresh()
             else:
                 string = self.draw(key,self.input_win, update_sum_text,string)
+                
+    def handle_sum(self,sum):
+        string= sum
+        while True:
+            key = self.stdscr.getch()
+            log.info(key)
+            if key == KEYS['quit']:
+                log.info('break')
+                break
+            elif key == KEYS['enter'] or key in KEYS['up/down']:
+                if KEYS['up/down'][key] == 'down':
+                    self.input_win.bkgd(' ',curses.color_pair(3))
+                    self.input_win.refresh()
+                    return string
+                self.input_win.bkgd(' ',curses.color_pair(3))
+                self.input_win.refresh()
+                return string
+            elif key == KEYS['plus']:
+                self.input_win.clear()
+                self.input_win.addstr('+'+string)
+                self.input_win.refresh()
+            else:
+                string = self.draw(key,self.input_win, update_sum_text,string)
+            
             
     def add_request(self,string):
         self.details_win.bkgd(' ',curses.color_pair(3))
@@ -100,9 +129,10 @@ class App:
         category = 'food'
         note = 'Enter note: '
         
-        data[0] = category
-        data[1] = date 
-        data[2] = note
+        data[0] = string
+        data[1] = category
+        data[2] = date 
+        data[3] = note
         
         self.details_win.addstr(0,0,category)
         self.details_win.addstr(1,0,date)
@@ -135,19 +165,30 @@ class App:
                         focus += 1
                         unfocused_pad.refresh(focus-1,0,1+focus,0,1+focus,19)    
                         focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
+                        
                 if KEYS['up/down'][key] == 'up':
                     if focus > 0:
                         focus -= 1
                         unfocused_pad.refresh(focus+1,0,3+focus,0,3+focus,19)
                         focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
+                    elif focus == 0:
+                        #TODO: fix bug with highlighting of sum input
+                        unfocused_pad.refresh(focus,0,2+focus,0,2+focus,19)
+                        self.input_win.bkgd(' ',curses.color_pair(6))
+                        self.input_win.refresh()
+                        string = self.handle_sum(string)
+                        
                         
             else:
                 if focus == 0:
                         # category field
                         category = self.сategory_handler(category, key)
                         
-                        if category in CATEGORIES:
-                            data[0] = category
+                        data[1] = category
+                        if category not in CATEGORIES:
+                            CATEGORIES.append(category)  
+                            
+                        log.info(CATEGORIES)  
                         focus_pad.move(0,0)
                         focus_pad.clrtoeol()
                         focus_pad.addstr(0,0,category)
@@ -180,9 +221,17 @@ class App:
                         break
         elif key == KEYS['insert']:
             category = self.create_category()
+        elif key == KEYS['delete']:
+            if len(CATEGORIES) != 1:
+                self.delete_category(category)
+            category = CATEGORIES[0]
         
         return category    
 
+    def delete_category(self,category):
+        for c in CATEGORIES:
+            if c == category:
+                CATEGORIES.remove(category)
     
     def create_category(self):
         key = self.stdscr.getch()
@@ -194,7 +243,6 @@ class App:
             if key == KEYS['quit']:
                 self.quit()
                 
-            log.info(category)
             category = self.draw(key,category_win,update_text,category)
             key = self.stdscr.getch()
             
@@ -207,45 +255,6 @@ class App:
         curses.echo()
         curses.endwin()
         exit()
-    
-def parse_int(string):
-    s = ''
-    f = 0
-    for c in string:
-        if c.isdigit():
-            if c != '0' or f == 1:
-                f = 1
-                s += c
-    return s
 
-def parse_string(string):
-    s = ''
-    f = 0
-    for char in string:
-        if ord(char) >= 65 and ord(char) <= 90:
-            s += char
-        elif ord(char) >= 97 and ord(char) <= 122:
-            s += char
-    return s
-
-def update_sum_text(text, string, remove=False):
-    if text != '' or parse_int(string) != '':
-        new_text = parse_int(text + string)
-        if remove:
-            new_text = new_text[:-1]
-
-        if len(new_text) < 3:
-            zeros = '0' * (4 - len(new_text))
-            new_text = zeros + new_text
-        text = new_text[:-2] + '.' + new_text[-2:]
-    return text
-
-def update_text(text,string,remove=False):
-    new_text = text
-    new_text = parse_string(text + string)
-    if remove:
-        new_text = new_text[:-1]
-    return new_text
-        
         
 
