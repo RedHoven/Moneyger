@@ -13,6 +13,7 @@ KEYS = {
     'enter': 10,
     'delete' : 127,
     'up/down':{
+
         259: 'up',
         258: 'down',
     },
@@ -54,80 +55,111 @@ class App:
     
     def run(self):
         try:
-            self.main()
+            self.welcome()
         except Exception as e:
             log.exception('\nException occured')
         finally:
             log.info("\nquit\n\n")
             self.quit()
             
-    def draw(self,key, win, processor,string):
-        win.clear()
+    def draw(self,key, processor,string):
         
         if key == KEYS['delete']:
             new_str = processor(string,chr(key),True)
         else:
             new_str = processor(string,chr(key))
-            
-        win.addstr(new_str)    
-        win.refresh()
+        
         return new_str
             
-    def main(self):
+    def welcome(self):
         current_time = datetime.now()
         log.info(f"\nstarting the app: {current_time}\n")
         self.stdscr.addstr('Welcome to Moneyger!')
 
         string = ''
+        sign = '-'
+        sum = ''
+        
         self.stdscr.move(1,0)
+        self.stdscr.addstr('Type to add cost')
         curses.curs_set(1)  
+        
         while True:
             key = self.stdscr.getch()
-            log.info(key)
+            log.info('Welocome key:'+str(key))
             if key == KEYS['quit']:
                 log.info('break')
                 break
             elif key == KEYS['enter']:
-                self.add_request(string)
+                self.add_request(string)      
             elif key == KEYS['plus']:
                 self.input_win.clear()
-                self.input_win.addstr('+'+string)
+                sign = '+'
+                string = sign + sum
+                self.input_win.addstr(string)
+                self.input_win.refresh()
+            elif key==  KEYS['minus']:
+                self.input_win.clear()
+                sign = '-'
+                string = sign + sum
+                self.input_win.addstr(string)
                 self.input_win.refresh()
             else:
-                string = self.draw(key,self.input_win, update_sum_text,string)
+                self.input_win.clear()
+                sum = self.draw(key, update_sum_text, sum)
+                string = sign + sum
+                self.input_win.addstr(string)
+                self.input_win.refresh()
                 
     def handle_sum(self,sum):
-        string= sum
+        sign = sum[0]
+        sum= sum[1:]
+        string = sign + sum 
         while True:
             key = self.stdscr.getch()
             log.info(key)
             if key == KEYS['quit']:
-                log.info('break')
-                break
-            elif key == KEYS['enter'] or key in KEYS['up/down']:
-                if KEYS['up/down'][key] == 'down':
-                    self.input_win.bkgd(' ',curses.color_pair(3))
+                self.quit()
+            elif key == KEYS['enter']:
+                return string, False
+            elif key in KEYS['up/down']:
+                if KEYS['up/down'][key] == 'up':
+                    self.input_win.bkgd(' ',curses.color_pair(6))
                     self.input_win.refresh()
-                    return string
-                self.input_win.bkgd(' ',curses.color_pair(3))
-                self.input_win.refresh()
-                return string
+                elif KEYS['up/down'][key] == 'down':
+                    self.input_win.bkgd(' ',curses.color_pair(3))
+                    return string, True
             elif key == KEYS['plus']:
                 self.input_win.clear()
-                self.input_win.addstr('+'+string)
+                sign = '+'
+                string = sign + sum
+                self.input_win.addstr(string)
                 self.input_win.refresh()
+            elif key == KEYS['minus']:
+                self.input_win.clear()
+                sign = '-'
+                string = sign + sum
+                self.input_win.addstr(string)
+                self.input_win.refresh() 
             else:
-                string = self.draw(key,self.input_win, update_sum_text,string)
+                self.input_win.clear()
+                sum = self.draw(key,update_sum_text,sum)
+                string = sign + sum
+                self.input_win.addstr(string)
+                self.input_win.refresh()
             
             
     def add_request(self,string):
         self.details_win.bkgd(' ',curses.color_pair(3))
         curses.curs_set(0)
-        sum = float(string)
+        sign = string[0]
+        sum = float(string[1:])
         data = dict()
         date = datetime.now().strftime(DATE_FORMAT)
+        
+        # set the most probable category
         category = 'food'
-        note = 'Enter note: '
+        note = 'Enter note'
         
         data[0] = string
         data[1] = category
@@ -161,44 +193,55 @@ class App:
                 self.quit()
             if key in KEYS['up/down']:
                 if KEYS['up/down'][key] == 'down':
-                    if focus < len(data)-1:
+                    if focus == -1:
+                        focus += 1
+                        focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
+                    elif focus < len(data)-2:
                         focus += 1
                         unfocused_pad.refresh(focus-1,0,1+focus,0,1+focus,19)    
                         focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
                         
                 if KEYS['up/down'][key] == 'up':
-                    if focus > 0:
+                    if focus == -1:
+                        unfocused_pad.refresh(focus+1,0,3+focus,0,3+focus,19)
+                    elif focus > 0:
                         focus -= 1
                         unfocused_pad.refresh(focus+1,0,3+focus,0,3+focus,19)
                         focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
                     elif focus == 0:
-                        #TODO: fix bug with highlighting of sum input
                         unfocused_pad.refresh(focus,0,2+focus,0,2+focus,19)
                         self.input_win.bkgd(' ',curses.color_pair(6))
                         self.input_win.refresh()
-                        string = self.handle_sum(string)
-                        
+                        string, down = self.handle_sum(string)
+                        if down:
+                            focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
+                        else:
+                            focus == -1
                         
             else:
                 if focus == 0:
-                        # category field
-                        category = self.сategory_handler(category, key)
+                    # category field
+                    category = self.сategory_handler(category, key)
+                    
+                    data[1] = category
+                    if category not in CATEGORIES:
+                        CATEGORIES.append(category)  
                         
-                        data[1] = category
-                        if category not in CATEGORIES:
-                            CATEGORIES.append(category)  
-                            
-                        log.info(CATEGORIES)  
-                        focus_pad.move(0,0)
-                        focus_pad.clrtoeol()
-                        focus_pad.addstr(0,0,category)
-                        unfocused_pad.move(0,0)
-                        unfocused_pad.clrtoeol()
-                        unfocused_pad.addstr(0,0,category)
-                        focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
+                    log.info(CATEGORIES)  
+                    focus_pad.move(0,0)
+                    focus_pad.clrtoeol()
+                    focus_pad.addstr(0,0,category)
+                    unfocused_pad.move(0,0)
+                    unfocused_pad.clrtoeol()
+                    unfocused_pad.addstr(0,0,category)
+                    focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
                         
                 if focus == 1:
-                    #date handler
+                    # date handler
+                    pass
+                
+                if focus == 2:
+                    # note handler
                     pass
                         
     def сategory_handler(self,category, key):
