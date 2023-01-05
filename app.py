@@ -1,7 +1,7 @@
 import curses
 from datetime import datetime
 import logging
-from parsers import update_sum_text,update_text
+from parsers import update_sum_text,update_text, parse_int, update_date
 
 logging.basicConfig(filename='moneyger.log', filemode='w', level=logging.DEBUG)
 log = logging.getLogger(__file__)
@@ -27,7 +27,7 @@ KEYS = {
 DATE_FORMAT = "%d-%m-%Y"
 
 CATEGORIES = [
-    'food', 'restaurants', 'beauty', 'home', 'presents'
+    'food', 'restaurants', 'beauty', 'home', 'presents', 'unknown'
 ]
 
 class App:
@@ -62,7 +62,7 @@ class App:
             log.info("\nquit\n\n")
             self.quit()
             
-    def draw(self,key, processor,string):
+    def draw(self, key, processor,string):
         
         if key == KEYS['delete']:
             new_str = processor(string,chr(key),True)
@@ -70,11 +70,21 @@ class App:
             new_str = processor(string,chr(key))
         
         return new_str
+    
+    def draw_on_win(self,key, win, processor,string):
+        if key == KEYS['delete']:
+            new_str = processor(string,chr(key),True)
+        else:
+            new_str = processor(string,chr(key))
+        win.clear()
+        win.addstr(new_str)
+        win.refresh()
+        return new_str
             
     def welcome(self):
         current_time = datetime.now()
         log.info(f"\nstarting the app: {current_time}\n")
-        self.stdscr.addstr('Welcome to Moneyger!')
+        self.stdscr.addstr('Welcome to Moneyger!', curses.color_pair(3))
 
         string = ''
         sign = '-'
@@ -128,6 +138,7 @@ class App:
                     self.input_win.refresh()
                 elif KEYS['up/down'][key] == 'down':
                     self.input_win.bkgd(' ',curses.color_pair(3))
+                    self.input_win.refresh()
                     return string, True
             elif key == KEYS['plus']:
                 self.input_win.clear()
@@ -147,9 +158,11 @@ class App:
                 string = sign + sum
                 self.input_win.addstr(string)
                 self.input_win.refresh()
-            
-            
+                     
     def add_request(self,string):
+        self.stdscr.move(0,0)
+        self.stdscr.clrtoeol(); 
+        self.stdscr.addstr(0,0,'Add Request')
         self.details_win.bkgd(' ',curses.color_pair(3))
         curses.curs_set(0)
         sign = string[0]
@@ -196,6 +209,8 @@ class App:
                     if focus == -1:
                         focus += 1
                         focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
+                        self.input_win.bkgd(' ',curses.color_pair(3))
+                        self.input_win.refresh()
                     elif focus < len(data)-2:
                         focus += 1
                         unfocused_pad.refresh(focus-1,0,1+focus,0,1+focus,19)    
@@ -216,7 +231,7 @@ class App:
                         if down:
                             focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
                         else:
-                            focus == -1
+                            focus = -1
                         
             else:
                 if focus == 0:
@@ -238,7 +253,18 @@ class App:
                         
                 if focus == 1:
                     # date handler
-                    pass
+                    date = self.date_handler(date, key)
+                    
+                    focus_pad.move(1,0)
+                    focus_pad.clrtoeol()
+                    focus_pad.addstr(1,0,date)
+                    
+                    unfocused_pad.move(1,0)
+                    unfocused_pad.clrtoeol()
+                    unfocused_pad.addstr(1,0,date)
+                    
+                    #unfocused_pad.refresh(0,0,2,0,4,19)
+                    focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
                 
                 if focus == 2:
                     # note handler
@@ -286,11 +312,58 @@ class App:
             if key == KEYS['quit']:
                 self.quit()
                 
-            category = self.draw(key,category_win,update_text,category)
+            category = self.draw_on_win(key,category_win,update_text,category)
             key = self.stdscr.getch()
             
         return category
+    
+    def date_handler(self, date, key):
+        old_date = date
+        if key in KEYS['right/left']:
+            if KEYS['right/left'][key] == 'right':
+                #next day    
+                pass 
+            elif KEYS['right/left'][key] == 'left':
+                #prev day
+                pass
+        elif key == KEYS['insert']:
+            date = self.create_date()
+        return date
          
+    def create_date(self):
+        key = self.stdscr.getch()
+        date = ''
+        date_win = curses.newwin(1,20,3,0)
+        date_win.bkgd(' ',self.bw)
+        
+        right_format = False
+        while not right_format:
+            if key == KEYS['enter']:
+                log.debug('Ok, you pressed ENTER')
+                
+                # initializing string
+                test_str = date
+                
+                # checking if format matches the date
+                right_format = True
+                try:
+                    right_format = bool(datetime.strptime(test_str, DATE_FORMAT))
+                except ValueError:
+                    self.stdscr.move(0,0)
+                    self.stdscr.clrtoeol(); 
+                    self.stdscr.addstr(0,0,'Incorrect Date Typed')
+                    log.info('Date entered incorrectly')
+                    right_format = False
+
+            if key == KEYS['quit']:
+                self.quit()
+            
+            date = self.draw_on_win(key,date_win,update_date,date)
+            key = self.stdscr.getch()
+        
+        log.info('Date entered succesfylly')
+        return date
+    
     
     def quit(self):
         curses.nocbreak()

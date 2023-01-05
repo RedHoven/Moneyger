@@ -8,6 +8,13 @@ def parse_int(string):
                 s += c
     return s
 
+def parse_string_to_int(string):
+    s = ''
+    for c in string:
+        if c.isdigit():
+            s += c
+    return s
+
 def parse_string(string):
     s = ''
     f = 0
@@ -36,4 +43,11 @@ def update_text(text,string,remove=False):
     if remove:
         new_text = new_text[:-1]
     return new_text
+
+def update_date(text,string,remove=False):
+    if string == '-' or parse_string_to_int(string) != '':
+        text = text+string
+    elif remove and text != '':
+        text = text[:-1]
+    return text
         
