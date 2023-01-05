@@ -1,7 +1,7 @@
 import curses
-from datetime import datetime
+from datetime import date, datetime, timedelta
 import logging
-from parsers import update_sum_text,update_text, parse_int, update_date
+from parsers import update_sum_text,update_text, update_date
 
 logging.basicConfig(filename='moneyger.log', filemode='w', level=logging.DEBUG)
 log = logging.getLogger(__file__)
@@ -168,7 +168,8 @@ class App:
         sign = string[0]
         sum = float(string[1:])
         data = dict()
-        date = datetime.now().strftime(DATE_FORMAT)
+        date = datetime.now()
+        date_str = datetime.now().strftime(DATE_FORMAT)
         
         # set the most probable category
         category = 'food'
@@ -176,11 +177,11 @@ class App:
         
         data[0] = string
         data[1] = category
-        data[2] = date 
+        data[2] = date_str 
         data[3] = note
         
         self.details_win.addstr(0,0,category)
-        self.details_win.addstr(1,0,date)
+        self.details_win.addstr(1,0,date_str)
         self.details_win.addstr(2,0,note)
         self.details_win.refresh()
         
@@ -188,14 +189,14 @@ class App:
         focus_pad = curses.newpad(100,100)
         focus_pad.bkgd(' ',self.bw)
         focus_pad.addstr(0,0,category)
-        focus_pad.addstr(1,0,date)
+        focus_pad.addstr(1,0,date_str)
         focus_pad.addstr(2,0,note)
         focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
         
         unfocused_pad = curses.newpad(100,100)
         unfocused_pad.bkgd(' ',curses.color_pair(3))
         unfocused_pad.addstr(0,0,category)
-        unfocused_pad.addstr(1,0,date)
+        unfocused_pad.addstr(1,0,date_str)
         unfocused_pad.addstr(2,0,note)
 
         self.stdscr.move(2,0)
@@ -252,16 +253,16 @@ class App:
                     focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
                         
                 if focus == 1:
-                    # date handler
-                    date = self.date_handler(date, key)
+                    # date_str handler
+                    date_str = self.date_handler(date_str, key)
                     
                     focus_pad.move(1,0)
                     focus_pad.clrtoeol()
-                    focus_pad.addstr(1,0,date)
+                    focus_pad.addstr(1,0,date_str)
                     
                     unfocused_pad.move(1,0)
                     unfocused_pad.clrtoeol()
-                    unfocused_pad.addstr(1,0,date)
+                    unfocused_pad.addstr(1,0,date_str)
                     
                     #unfocused_pad.refresh(0,0,2,0,4,19)
                     focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
@@ -317,24 +318,32 @@ class App:
             
         return category
     
-    def date_handler(self, date, key):
-        old_date = date
+    def date_handler(self, date_str, key):
+        old_date = date_str
+        date_win = curses.newwin(1,20,3,0)
+        date_win.bkgd(' ',self.bw)
         if key in KEYS['right/left']:
             if KEYS['right/left'][key] == 'right':
                 #next day    
-                pass 
+                this_day = datetime.strptime(date_str, DATE_FORMAT)
+                this_day += timedelta(days=1)
+                date_str = this_day.strftime(DATE_FORMAT)
+                date_str = self.draw_on_win(key,date_win,update_date,date_str)
+                
             elif KEYS['right/left'][key] == 'left':
                 #prev day
-                pass
+                this_day = datetime.strptime(date_str, DATE_FORMAT)
+                this_day -= timedelta(days=1)
+                date_str = this_day.strftime(DATE_FORMAT)
+                date_str = self.draw_on_win(key,date_win,update_date,date_str)
+                
         elif key == KEYS['insert']:
-            date = self.create_date()
-        return date
+            date_str = self.create_date(date_win)
+        return date_str
          
-    def create_date(self):
+    def create_date(self, date_win):
         key = self.stdscr.getch()
-        date = ''
-        date_win = curses.newwin(1,20,3,0)
-        date_win.bkgd(' ',self.bw)
+        date_str = ''
         
         right_format = False
         while not right_format:
@@ -342,29 +351,31 @@ class App:
                 log.debug('Ok, you pressed ENTER')
                 
                 # initializing string
-                test_str = date
+                test_str = date_str
                 
-                # checking if format matches the date
+                # checking if format matches the date_str
                 right_format = True
                 try:
                     right_format = bool(datetime.strptime(test_str, DATE_FORMAT))
+                    log.info('date_str entered succesfylly')
+                    self.stdscr.move(0,0)
+                    self.stdscr.clrtoeol(); 
+                    self.stdscr.addstr(0,0,'Add Request')
+                    return date_str
                 except ValueError:
                     self.stdscr.move(0,0)
                     self.stdscr.clrtoeol(); 
-                    self.stdscr.addstr(0,0,'Incorrect Date Typed')
-                    log.info('Date entered incorrectly')
+                    self.stdscr.addstr(0,0,'Incorrect date_str Typed')
                     right_format = False
 
             if key == KEYS['quit']:
                 self.quit()
             
-            date = self.draw_on_win(key,date_win,update_date,date)
+            date_str = self.draw_on_win(key,date_win,update_date,date_str)
             key = self.stdscr.getch()
-        
-        log.info('Date entered succesfylly')
-        return date
     
-    
+        return date_str
+  
     def quit(self):
         curses.nocbreak()
         self.stdscr.keypad(False)
