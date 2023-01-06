@@ -1,7 +1,8 @@
 import curses
+from curses.textpad import Textbox
 from datetime import date, datetime, timedelta
 import logging
-from parsers import update_sum_text,update_text, update_date
+from parsers import update_sum_text,update_text, update_date, update_plain_text
 
 logging.basicConfig(filename='moneyger.log', filemode='w', level=logging.DEBUG)
 log = logging.getLogger(__file__)
@@ -39,7 +40,7 @@ class App:
         self.stdscr.keypad(True)
         self.string = ""
         self.input_win = curses.newwin(1,20, 1,0)
-        self.details_win = curses.newwin(3, 20, 2, 0)
+        self.details_win = curses.newwin(3, 20, 2, 0)    
         self.init_colors()
         
     def init_colors(self):
@@ -255,6 +256,7 @@ class App:
                 if focus == 1:
                     # date_str handler
                     date_str = self.date_handler(date_str, key)
+                    date = datetime.strptime(date_str, DATE_FORMAT)
                     
                     focus_pad.move(1,0)
                     focus_pad.clrtoeol()
@@ -264,12 +266,25 @@ class App:
                     unfocused_pad.clrtoeol()
                     unfocused_pad.addstr(1,0,date_str)
                     
-                    #unfocused_pad.refresh(0,0,2,0,4,19)
                     focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
                 
                 if focus == 2:
                     # note handler
-                    pass
+                    note = self.note_handler(key, note)
+                    
+                    focus_pad.move(2,0)
+                    focus_pad.clrtoeol()
+                    
+                    unfocused_pad.move(2,0)
+                    unfocused_pad.clrtoeol()
+                    
+                    if len(note) > 18:
+                        unfocused_pad.addstr(2,0,note[:16]+"...")
+                        focus_pad.addstr(2,0,note[:16]+"...")
+                    else:
+                        unfocused_pad.addstr(2,0,note)
+                        focus_pad.addstr(2,0,note)
+                    focus_pad.refresh(focus,0,2+focus,0,2+focus,19)
                         
     def сategory_handler(self,category, key):
         if key in KEYS['right/left']:
@@ -295,7 +310,6 @@ class App:
             if len(CATEGORIES) != 1:
                 self.delete_category(category)
             category = CATEGORIES[0]
-        
         return category    
 
     def delete_category(self,category):
@@ -309,6 +323,9 @@ class App:
         category_win = curses.newwin(1,20,2,0)
         category_win.bkgd(' ',self.bw)
         
+        self.stdscr.move(0,0)
+        self.stdscr.clrtoeol(); 
+        self.stdscr.addstr(0,0,'Please type in new category!')
         while key != KEYS['enter']:
             if key == KEYS['quit']:
                 self.quit()
@@ -316,6 +333,9 @@ class App:
             category = self.draw_on_win(key,category_win,update_text,category)
             key = self.stdscr.getch()
             
+        self.stdscr.move(0,0)
+        self.stdscr.clrtoeol(); 
+        self.stdscr.addstr(0,0,'Add Request')
         return category
     
     def date_handler(self, date_str, key):
@@ -365,7 +385,7 @@ class App:
                 except ValueError:
                     self.stdscr.move(0,0)
                     self.stdscr.clrtoeol(); 
-                    self.stdscr.addstr(0,0,'Incorrect date_str Typed')
+                    self.stdscr.addstr(0,0,'Incorrect Date Typed')
                     right_format = False
 
             if key == KEYS['quit']:
@@ -373,8 +393,77 @@ class App:
             
             date_str = self.draw_on_win(key,date_win,update_date,date_str)
             key = self.stdscr.getch()
+            
     
         return date_str
+   
+    def note_handler(self, key, note):
+        note_win = curses.newwin(1,20,4,0)
+        note_win.bkgd(' ',self.bw)
+        
+        log.debug(key)
+        if key == KEYS['insert']:
+            log.info('insert')
+            self.stdscr.move(0,0)
+            self.stdscr.clrtoeol(); 
+            self.stdscr.addstr(0,0,'Please type in your note')
+            note = self.create_note(note_win, note)
+        
+        if key == 136:
+            log.info('insert')
+            self.stdscr.move(0,0)
+            self.stdscr.clrtoeol(); 
+            self.stdscr.addstr(0,0,'Please type in your note')
+            note = self.create_note(note_win, note)
+        
+        self.stdscr.move(0,0)
+        self.stdscr.clrtoeol(); 
+        self.stdscr.addstr(0,0,'Add request')
+        return note
+    
+    def create_note(self,note_win, note):
+        curses.curs_set(2)
+        self.stdscr.move(4,len(note))
+        big_note_win = curses.newwin(10,40,4,0)
+        big_note_win.bkgd(' ',curses.color_pair(6))
+        
+        if len(note) > 18:
+            active_win = big_note_win
+        else:
+            active_win = note_win
+        
+        active_win.clear()
+        active_win.addstr(note)
+        active_win.bkgd(' ',curses.color_pair(6))   
+        active_win.refresh()
+        key = self.stdscr.get_wch()
+        while not isinstance(key, int) and not key in ('\n'):
+            if len(note) > 18:
+                active_win = big_note_win
+                
+            if key in ('KEY_BACKSPACE', '\b', '\x7f'):
+                note = update_plain_text(note,key,True)
+            else:
+                note = update_plain_text(note,key)
+                log.info(key)
+                
+            active_win.clear()
+            try:
+                active_win.addstr(note)
+            except curses.error:
+                log.error(curses.error.__name__)
+            active_win.refresh()
+            key = self.stdscr.get_wch()    
+            log.debug(key)
+        
+        big_note_win.clear()
+        big_note_win.bkgd(' ',curses.color_pair(3)) 
+        big_note_win.refresh()
+        self.stdscr.refresh()
+        log.info('note: '+ note)
+        curses.curs_set(0)
+        return note
+            
   
     def quit(self):
         curses.nocbreak()

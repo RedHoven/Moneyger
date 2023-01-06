@@ -17,7 +17,6 @@ def parse_string_to_int(string):
 
 def parse_string(string):
     s = ''
-    f = 0
     for char in string:
         if ord(char) >= 65 and ord(char) <= 90:
             s += char
@@ -50,4 +49,12 @@ def update_date(text,string,remove=False):
     elif remove and text != '':
         text = text[:-1]
     return text
-        
+
+def update_plain_text(text,string,remove=False):
+    if remove and text != '':
+        text = text[:-1]
+    elif remove and text == "":
+        pass
+    else:
+        text = text+string
+    return text
