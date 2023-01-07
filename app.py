@@ -31,16 +31,22 @@ DATE_FORMAT = "%d-%m-%Y"
 class App:
     
     def __init__(self) -> None:
+        # init curses
         self.stdscr = curses.initscr()
         curses.noecho()
         curses.cbreak()
         self.stdscr.keypad(True)
         
         self.string = ""
+        # upper left corner of the App
         self.xs = 35
         self.ys = 2
+        
+        # 2 Main Wins
         self.input_win = self.stdscr.subwin(1,20, self.ys+1,self.xs)
-        self.details_win = self.stdscr.subwin(3, 20, self.ys+2,self.xs)    
+        self.details_win = self.stdscr.subwin(3, 20, self.ys+2,self.xs) 
+        
+        # Other   
         self.init_colors()
         self.db = Database()
         self.CATEGORIES = self.db.get_categories()
@@ -73,7 +79,6 @@ class App:
         self.stdscr.move(yo,xo)
         self.stdscr.clrtoeol()
         self.stdscr.addstr(yo,xo,smth)
-        self.stdscr.refresh()
             
     def draw(self, key, processor,string):
         
@@ -109,9 +114,11 @@ class App:
         self.stdscr.clrtoeol()
         self.stdscr.addstr(yo,xo,'Welcome to Moneyger!')
         self.stdscr.move(yo+1,xo)
+        
         self.input_win.clear()
         self.input_win.addstr('Type the cost')
         self.input_win.refresh()
+        
         log.debug('cursor pos: '+str(self.stdscr.getyx()))
         rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+2+1, self.xs+30+1)
         self.stdscr.move(yo+1,xo)
@@ -126,8 +133,6 @@ class App:
                 log.info('break')
                 break
             elif key == KEYS['enter']:
-                if string=='':
-                    self.stdscr.move(self.ys+1,self.xs)
                 if string !='' and string != '-' and string !='+':
                     self.add_request(string)      
             elif key == KEYS['plus']:
@@ -160,6 +165,8 @@ class App:
             log.info(key)
             if key == KEYS['enter']:
                 self.say('Sum Saved. Hit ENTER to save')
+                rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+                self.stdscr.refresh()
                 return string, False
             if key == KEYS['quit']:
                 self.quit()
@@ -191,7 +198,7 @@ class App:
                 self.input_win.refresh()
                             
     def add_request(self,string):
-        
+         
         self.stdscr.clear()
         self.input_win.clear()
         self.input_win.addstr(string)
@@ -200,8 +207,10 @@ class App:
         self.say('Add Request')
         rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
         self.stdscr.refresh()
+        
         self.details_win.bkgd(' ',curses.color_pair(3))
         curses.curs_set(0)
+        
         sign = string[0]
         sum = float(string[1:])
         data = dict()
@@ -242,6 +251,7 @@ class App:
         self.stdscr.move(y+2,x+0)
         key = self.stdscr.getch()
         log.info(key)
+        
         while True:
             if key == KEYS['enter']:
                 #save transaction
@@ -260,6 +270,8 @@ class App:
                 self.say('Saved!')
                 rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
                 self.stdscr.refresh()
+                
+                # TODO investigate what key here changes
                 key = self.stdscr.getch()
                 self.say('Add Request')
                 rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
@@ -272,42 +284,54 @@ class App:
                 self.say('Add Request')
                 rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
                 self.stdscr.refresh()
+                
                 if KEYS['up/down'][key] == 'down':
                     log.info('down')
+                    log.debug('focus: '+str(focus))
+                    log.debug('category: '+category)
+                    
                     if focus == -1:
                         focus += 1
-                        focus_pad.refresh(focus,0,y+1+focus,x,y+1+focus,x+19)
-                    elif focus < len(data)-2:
+                        self.input_win.bkgd(' ',curses.color_pair(3))
+                        self.input_win.refresh()
+                        focus_pad.refresh(focus,0,y+2+focus,x,y+2+focus,x+19)
+                    elif focus < 2:
                         focus += 1
                         unfocused_pad.refresh(focus-1,0,y+1+focus,x,y+1+focus,x+19)    
+                        focus_pad.refresh(focus,0,y+2+focus,x,y+2+focus,x+19)
+                    else:
                         focus_pad.refresh(focus,0,y+2+focus,x,y+2+focus,x+19)
                         
                 if KEYS['up/down'][key] == 'up':
                     log.info('up')
-                    if focus == -1:
-                        unfocused_pad.refresh(focus+1,0,y+3+focus,x,y+3+focus,x+19)
-                    elif focus > 0:
+                    if focus > 0:
                         focus -= 1
                         unfocused_pad.refresh(focus+1,0,y+3+focus,x,y+3+focus,x+19)
                         focus_pad.refresh(focus,0,y+2+focus,x,y+2+focus,x+19)
+                        
                     elif focus == 0:
                         unfocused_pad.refresh(focus,0,y+2+focus,x,y+2+focus,x+19)
                         self.input_win.bkgd(' ',curses.color_pair(6))
                         self.input_win.refresh()
-                        self.say('Edit Request')
+                        
+                        self.say('Edit Sum')
                         rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
                         self.stdscr.refresh()
+                        
                         string, down = self.handle_sum(string)
                         if down:
-                            focus_pad.refresh(focus,0,y+2+focus,x,y+2+focus,x+19)
                             self.say('Add Request')
-                            rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+                            rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)    
                             self.stdscr.refresh()
+                            
+                            focus_pad.refresh(focus,0,y+2+focus,x,y+2+focus,x+19)
+                            log.debug('from sum to category')
                         else:
                             focus = -1             
             else:
                 if focus == -1:
-                    self.say('Edit Request')
+                    log.debug('sum focus')
+                    self.say('Edit Sum')
                     rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
                     self.stdscr.refresh()
                     string, down = self.handle_sum(string)
@@ -318,6 +342,7 @@ class App:
                         focus = -1
                     
                 elif focus == 0:
+                    log.debug('category focus')
                     # category field
                     category = self.сategory_handler(category, key)
     
@@ -335,9 +360,12 @@ class App:
                     unfocused_pad.move(0,0)
                     unfocused_pad.clrtoeol()
                     unfocused_pad.addstr(0,0,category)
+                    
+                    unfocused_pad.refresh(focus,0,y+2+focus,x,y+2+focus,x+19)
                     focus_pad.refresh(focus,0,y+2+focus,x,y+2+focus,x+19)
                         
                 elif focus == 1:
+                    log.debug('date focus')
                     # date_str handler
                     date_str = self.date_handler(date_str, key)
                     date = datetime.strptime(date_str, DATE_FORMAT)
@@ -353,6 +381,7 @@ class App:
                     focus_pad.refresh(focus,0,y+2+focus,x,y+2+focus,x+19)
                 
                 elif focus == 2:
+                    log.debug('note focus')
                     # note handler
                     note = self.note_handler(key, note)
                     
@@ -395,13 +424,35 @@ class App:
         elif key == KEYS['insert']:
             self.say('Please type in new category!')
             rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
-            category = self.create_category()
+            self.stdscr.refresh()
+            
+            category_focus = self.stdscr.subwin(1,31,self.ys+2,self.xs)
+            category_focus.bkgd(' ',curses.color_pair(6))
+            category_focus.addstr(category)
+            category_focus.refresh()
+            
+            new_category = self.create_category()
+            if new_category != '':
+                category = new_category
+
         elif key == KEYS['delete']:
             if len(self.CATEGORIES) != 1:
                 self.delete_category(category)
                 self.db.delete_category(category)
             category = self.CATEGORIES[0]
             
+            
+        self.details_win.move(0,0)
+        self.details_win.clrtoeol()
+        self.details_win.addstr(0,0,category)
+        rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+        self.details_win.refresh()
+        self.stdscr.refresh()
+        
+        category_focus = self.stdscr.subwin(1,31,self.ys+2,self.xs)
+        category_focus.bkgd(' ',curses.color_pair(6))
+        category_focus.addstr(category)
+        category_focus.refresh()
         return category    
 
     def delete_category(self,category):
@@ -414,16 +465,16 @@ class App:
         category = ''
         category_win = self.stdscr.subwin(1,20,self.ys+2,self.xs)
         category_win.bkgd(' ',self.bw)
-        while key != KEYS['enter']:                
+        while key != KEYS['enter']:           
             category = self.draw_on_win(key,category_win,update_text,category)
             key = self.stdscr.getch()
         
         self.say('Add Request')
         rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+        self.stdscr.refresh()
         return category
     
     def date_handler(self, date_str, key):
-        old_date = date_str
         date_win = self.stdscr.subwin(1,20,self.ys+3,self.xs)
         date_win.bkgd(' ',self.bw)
         if key in KEYS['right/left']:
@@ -442,7 +493,15 @@ class App:
                 date_str = self.draw_on_win(key,date_win,update_date,date_str)
                 
         elif key == KEYS['insert']:
+            
             date_str = self.create_date(date_win)
+            
+        self.details_win.move(1,0)
+        self.details_win.clrtoeol()
+        self.details_win.addstr(1,0,date_str)
+        rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+        self.details_win.refresh()
+        self.stdscr.refresh()
         return date_str
          
     def create_date(self, date_win):
@@ -464,10 +523,12 @@ class App:
                     log.info('date_str entered succesfylly')
                     self.say('Add Request')
                     rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+                    self.stdscr.refresh()
                     return date_str
                 except ValueError:
                     self.say('Incorrect Date Typed')
                     rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+                    self.stdscr.refresh()
                     right_format = False
 
             if key == KEYS['quit']:
@@ -488,18 +549,28 @@ class App:
             log.info('insert')
             self.say('Please type in your note')
             rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+            self.stdscr.refresh()
             note = self.create_note(note_win, note)
             self.say('Add request')
             rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+            self.stdscr.refresh()
         
         if key == 136:
             log.info('insert')
             self.say('Please type in your note')
             rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+            self.stdscr.refresh()
             note = self.create_note(note_win, note)
             self.say('Add request')
             rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+            self.stdscr.refresh()
         
+        self.details_win.move(2,0)
+        self.details_win.clrtoeol()
+        self.details_win.addstr(2,0,note)
+        rectangle(self.stdscr, self.ys-1,self.xs-1, self.ys+5+1, self.xs+30+1)
+        self.details_win.refresh()
+        self.stdscr.refresh()
         return note
     
     def create_note(self,note_win, note):
