@@ -1,7 +1,7 @@
 /shelf/
 /workspace.xml
-.history
-__pycache__
-.idea
-.env
+/.history
+/__pycache__
+/.idea
+/.env
 
