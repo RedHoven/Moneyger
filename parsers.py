@@ -1,3 +1,30 @@
+import curses
+import unicodedata
+
+def is_printable_character(ch):
+    # Check if the character is a printable letter, number, or symbol
+    return unicodedata.category(ch).startswith('L') or \
+           unicodedata.category(ch).startswith('N') or \
+           unicodedata.category(ch).startswith('P') or \
+           ch == ' '
+
+def parse_wide_character(key):
+    if isinstance(key, int):
+        # Filter out command keys
+        if curses.KEY_MIN <= key <= curses.KEY_MAX:
+            return ''
+
+        # Convert the integer keycode to a character
+        return chr(key)
+
+    elif isinstance(key, str):
+        # Filter out non-printable characters
+        if not is_printable_character(key):
+            return ''
+
+    # Return the valid wide character
+    return key
+
 def parse_int(string):
     s = ''
     f = 0
