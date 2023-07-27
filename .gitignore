@@ -3,5 +3,9 @@
 .history
 __pycache__
 .idea
+.vscode
 env
-
+*.log
+*.db
+.png
+.ipynb

@@ -12,20 +12,19 @@ class Transaction:
         self.category = category
         self.date = date
         self.note = note
+        
+        self.log = None
+        
+    def init_logger(self, logger):
+        self.log = logger
 
-        logging.basicConfig(filename='transactions.log', filemode='w', level=logging.DEBUG)
-        self.log = logging.getLogger(__file__)
-
-    def print(self):
-        self.log.info(
-            '\n' + "Transaction Info" + '\n' + \
-            "sign: " + self.sign + '\n' + \
-            "sum: " + str(self.sum) + '\n' + \
-            "category: " + self.category + '\n' + \
-            "date: " + str(self.date) + '\n' + \
-            "note: " + self.note
-        )
-
+    def __str__(self):
+        return '\n' + "Transaction Info" + '\n' + \
+                "sign: " + self.sign + '\n' + \
+                "sum: " + str(self.sum) + '\n' + \
+                "category: " + self.category + '\n' + \
+                "date: " + str(self.date) + '\n' + \
+                "note: " + self.note
 
 class Database:
     def __init__(self):
@@ -149,10 +148,11 @@ if __name__ == "__main__":
     # d.update_categories(['groceries','restaurants','presents', 'salary', 'home', 'beauty', 'investments'])
     # d.connection.commit()
     #d.cursor.execute('UPDATE Categories SET frequency=11 WHERE name="coffee"')
-    #d.cursor.execute('UPDATE Categories SET frequency=4 WHERE name="services"')
+    d.cursor.execute('UPDATE Categories SET frequency=1 WHERE name="sport"')
     #d.cursor.execute('UPDATE Transactions SET note="" WHERE transaction_id=305')
     #d.cursor.execute('UPDATE Transactions SET sign="+" WHERE transaction_id=239')
     # d.cursor.execute('ALTER TABLE Categories ADD hide INTEGER DEFAULT 0;')
     # d.cursor.execute('DELETE FROM Categories WHERE category_id>=45')
-    # d.connection.commit()
+    # d.cursor.execute('DELETE FROM Transactions WHERE transaction_id>=316')
+    d.connection.commit()
     # print(d.transaction_list_to_frame())
