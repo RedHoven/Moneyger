@@ -1,4 +1,4 @@
-Moneyger
+## Moneyger
 Terminal app to keep track of your personal spendings and have a FULL access 
 to all your entries. 
 
