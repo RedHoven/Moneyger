@@ -1,21 +1,21 @@
-## Moneyger
+# Moneyger
 Terminal app to keep track of your personal spendings and have a FULL access 
 to all your entries. 
 
 The app is written with python curses and SQLite database. 
 
 The responsibilities of the main classes are below:
-
-App
+---------------------------------------------------------
+### App
 - inits the app, state manager, responsible for running the app, does actions based on a current state
 
-State Manager
+### State Manager
 - shifts between screens based on a current state
 
-SharedState 
+### SharedState 
 - keeps track of the curret state
 
-Screen
+### Screen
 - draws a screen
 - handles a key
 - returns a current state
