@@ -3,16 +3,16 @@ import logging
 import sqlite3
 from sqlite3 import Error
 import pandas as pd
-
+from utils import DATE_FORMAT
 
 class Transaction:
+    
     def __init__(self, sign: str, sum: float, category: str, date: datetime, note: str) -> None:
         self.sign = sign
         self.sum = sum
         self.category = category
         self.date = date
         self.note = note
-        
         self.log = None
         
     def init_logger(self, logger):
@@ -25,6 +25,15 @@ class Transaction:
                 "category: " + self.category + '\n' + \
                 "date: " + str(self.date) + '\n' + \
                 "note: " + self.note
+                
+    def to_rowstr(self):
+        return f"{self.sign+str(self.sum)}\t {self.category}\t {self.date.strftime('%d-%m')}"
+    
+    def to_table(self):
+        return  self.sign+str(self.sum),\
+                self.category,\
+                self.date.strftime('%d-%m')
+    
 
 class Database:
     def __init__(self):
@@ -83,7 +92,19 @@ class Database:
             if db_cat_record[1] not in list:
                 self.lock_category(db_cat_record[1])
             
-                
+    def get_recent_transactions(self, n):
+        transactions = []
+        c = self.cursor
+        c.execute('SELECT * FROM Transactions ORDER BY transaction_id DESC LIMIT ?;',(n,))
+        fetched = c.fetchall()
+        
+        for f in fetched:
+            transactions.append(
+                Transaction(f[1], f[2], f[3], 
+                            datetime.strptime(f[4].split()[0], '%Y-%m-%d'), 
+                            f[5])
+            )
+        return transactions
         
 
     def get_categories(self):
