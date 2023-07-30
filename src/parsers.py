@@ -85,3 +85,10 @@ def update_plain_text(text,string,remove=False):
     else:
         text = text+string
     return text
+
+def fill_space(text, length, fill_symbol=' '):
+    if len(text) >= length:
+        return text[:length]
+    else:
+        return f"{text}{fill_symbol * (length - len(text))}"
+    
