@@ -8,6 +8,7 @@ from parsers import *
 from keys import KEYS
 from database import Database, Transaction
 from state import AppState, SharedState
+from utils import DATE_FORMAT
 
 class MainScreen(Screen):
     def __init__(self, stdscr, shared_state: SharedState):
@@ -52,7 +53,7 @@ class MainScreen(Screen):
         
         # self.main_window.keypad(True)        # enable special chars for main win
         self.input_win = self.main_window.derwin(1, self.main_width-2, 2, 1)
-        self.shared_state.set_state(AppState.MAIN_SCREEN)
+        self.shared_state.set_state(AppState.MAIN)
         return self.shared_state
     
     def draw(self):
@@ -100,7 +101,7 @@ class MainScreen(Screen):
                 self.transaction.sign = sign
                 self.transaction.sum = float(sum)
                 self.shared_state.current_key = key
-                self.shared_state.set_state(AppState.TRANSACTION_SCREEN)
+                self.shared_state.set_state(AppState.WELCOME)
                 return
             
             if key == KEYS['quit']:
@@ -120,17 +121,6 @@ class MainScreen(Screen):
                 self.update_linewin(self.input_win, self.cut_string(string))
             self.stdscr.refresh()
             key = self.stdscr.getch()
-    
-class ExtendedMainScreen(Screen):
-    def __init__(self, stdscr, shared_state):
-        super().__init__(stdscr, shared_state)
-        
-        # side space
-        self.side_rows = (self.num_rows-self.main_height)//2
-        self.side_cols = (self.num_cols-self.main_width)//2   
-        
-        self.recent_transactions_win = curses.newwin(self.side_height, self.side_width,
-                                                self.side_height, self.side_width + self.main_width) 
 
 class WelcomeScreen(Screen):
     def __init__(self, stdscr, main_screen):
@@ -156,15 +146,17 @@ class WelcomeScreen(Screen):
     def handle_input(self):
         super().handle_input()
         key = self.stdscr.getch()
+        if key == KEYS['stats']:
+            self.shared_state.set_state(AppState.ANALYSIS)
+            return self.shared_state
         return self.welcome(key)
 
 class TransactionScreen(Screen):
     
-    DATE_FORMAT = "%d-%m-%Y"
-    
-    def __init__(self, stdscr, main_screen):
-        super().__init__(stdscr, main_screen.shared_state)
-        self.ms = main_screen
+    def __init__(self, stdscr, ext_main_screen):
+        super().__init__(stdscr, ext_main_screen.shared_state)
+        self.ems = ext_main_screen
+        self.ms = self.ems.ms
         self.main_window = self.ms.main_window
         self.shared_state = self.ms.shared_state
         self.t: Transaction = self.shared_state.get_transaction()
@@ -193,6 +185,7 @@ class TransactionScreen(Screen):
         self.row_s = self.ms.row_s
         
     def draw(self):
+        self.ems.draw()
         self.input_win = self.ms.input_win
         self.category_win = self.main_window.derwin(1, self.main_width-2, 3, 1)
         self.date_win = self.main_window.derwin(1, self.main_width-2, 4, 1)
@@ -204,15 +197,15 @@ class TransactionScreen(Screen):
         self.stdscr.clear()
         self.stdscr.bkgd(' ', curses.color_pair(3))
         self.details_win.box()
-        if self.shared_state.get_state() == AppState.TRANSACTION_SCREEN:
+        if self.shared_state.get_state() == AppState.TRANSACTION:
             self.print_request_message('Add Request')
-        elif self.shared_state.get_state() == AppState.TRANSACTION_SCREEN_SAVED:
+        elif self.shared_state.get_state() == AppState.SAVE_TRANSACTION:
             self.print_request_message('Saved!')
         
         sign = self.t.sign
         sum = self.t.sum
         date = self.t.date
-        date_str = self.t.date.strftime(self.DATE_FORMAT)
+        date_str = self.t.date.strftime(DATE_FORMAT)
         string = sign + str(sum)
         
         # set the most probable category
@@ -301,7 +294,7 @@ class TransactionScreen(Screen):
         category = self.t.category
         date = self.t.date
         note = self.t.note
-        date_str = self.t.date.strftime(self.DATE_FORMAT)
+        date_str = self.t.date.strftime(DATE_FORMAT)
         string = sign + str(sum)
         
         while True:
@@ -330,7 +323,14 @@ class TransactionScreen(Screen):
                 return self.shared_state              
             elif key == KEYS['quit']:
                 self.shared_state.set_state(AppState.QUIT)
-                return self.shared_state  
+                return self.shared_state 
+            
+            elif key == KEYS['stats']:
+                self.shared_state.set_state(AppState.ANALYSIS)
+                self.ems.info_win.clear()
+                self.ems.recent_transactions_win.clear()
+                self.stdscr.refresh()
+                return self.shared_state
             
             elif key in KEYS['up/down']:
                 self.log.info('Up/down')
@@ -406,7 +406,7 @@ class TransactionScreen(Screen):
                     date_str = self.date_handler(date_str, key, focus_pad)
                     if date_str is None:
                         return self.shared_state
-                    date = datetime.strptime(date_str, self.DATE_FORMAT)
+                    date = datetime.strptime(date_str, DATE_FORMAT)
  
                     if previous_date != date_str:
                         self.date_win.bkgd(' ',self.white_on_black)
@@ -507,16 +507,16 @@ class TransactionScreen(Screen):
     def date_handler(self, date_str, key, focus_pad):
         if key in KEYS['right']:
             #next day    
-            this_day = datetime.strptime(date_str, self.DATE_FORMAT)
+            this_day = datetime.strptime(date_str, DATE_FORMAT)
             this_day += timedelta(days=1)
-            date_str = this_day.strftime(self.DATE_FORMAT)
+            date_str = this_day.strftime(DATE_FORMAT)
             date_str = self.draw_on_win(key,self.date_win,update_date,date_str)
             
         elif key in KEYS['left']:
             #prev day
-            this_day = datetime.strptime(date_str, self.DATE_FORMAT)
+            this_day = datetime.strptime(date_str, DATE_FORMAT)
             this_day -= timedelta(days=1)
-            date_str = this_day.strftime(self.DATE_FORMAT)
+            date_str = this_day.strftime(DATE_FORMAT)
             date_str = self.draw_on_win(key,self.date_win,update_date,date_str)
                    
         elif key in KEYS['insert']:
@@ -540,7 +540,7 @@ class TransactionScreen(Screen):
                 # checking if format matches the date_str
                 right_format = True
                 try:
-                    right_format = bool(datetime.strptime(test_str, self.DATE_FORMAT))
+                    right_format = bool(datetime.strptime(test_str, DATE_FORMAT))
                     self.log.info('date_str entered succesfylly')
                     
                     return date_str
