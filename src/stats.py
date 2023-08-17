@@ -43,8 +43,8 @@ class Statistics:
         frequency_per_category = lm_transactions.groupby('category')['category'].count().sort_values(ascending=False)
         top_5_frequent = frequency_per_category.iloc[:5]
         
-        data["top_5_spendings"] = top_5_spendings.to_dict()
-        data["top_5_frequent"] = top_5_frequent.to_dict()
+        data["top_spendings"] = top_5_spendings.to_dict()
+        data["top_frequent"] = top_5_frequent.to_dict()
         
         return data
     
@@ -55,6 +55,11 @@ class Statistics:
         trs = self.records[self.records['month'].isin(months)]
         data['avg_spendings_per_month'] = trs[trs['sign']=='-'].groupby('month')['sum'].sum().mean()
         data['spendings_per_month'] = trs[trs['sign']=='-'].groupby('month')['sum'].sum().to_dict()
+        total_per_category = trs[trs.sign == '-'].groupby(['category','month'])['sum'].sum().to_frame()
+        total_per_category.reset_index(inplace=True)
+        # print(total_per_category)
+        total_per_category = total_per_category.groupby('category')['sum'].sum().sort_values(ascending=False)
+        data['category_per_month'] = total_per_category.iloc[:5].divide(6).to_dict()
         return data
         
         
