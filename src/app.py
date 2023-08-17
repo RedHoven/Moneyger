@@ -57,8 +57,8 @@ class App:
         if status == AppState.SAVE_TRANSACTION:
             transaction = state.get_transaction()
             self.logger.info('saving transaction')
-            self.sync_categories(state.get_categories())
-            self.db.add_transaction(transaction)
+            # self.sync_categories(state.get_categories())
+            # self.db.add_transaction(transaction)
             recent_transactions = self.get_n_recent_transaction()
             self.sm.shared_state.recent_transactions = recent_transactions
             self.logger.info(f'transaction: {state.get_transaction()}')

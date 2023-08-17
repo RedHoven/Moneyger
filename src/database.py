@@ -14,6 +14,7 @@ class Transaction:
         self.date = date
         self.note = note
         self.log = None
+        self.string = None
         
     def init_logger(self, logger):
         self.log = logger
@@ -33,6 +34,9 @@ class Transaction:
         return  self.sign+str(self.sum),\
                 self.category,\
                 self.date.strftime('%d-%m')
+                
+    def set_str(self, string):
+        self.string = string
     
 
 class Database:
@@ -168,10 +172,10 @@ if __name__ == "__main__":
     # d.clear_tables()
     # d.update_categories(['groceries','restaurants','presents', 'salary', 'home', 'beauty', 'investments'])
     # d.connection.commit()
-    #d.cursor.execute('UPDATE Categories SET frequency=11 WHERE name="coffee"')
-    d.cursor.execute('UPDATE Categories SET frequency=1 WHERE name="sport"')
+    # d.cursor.execute('UPDATE Categories SET frequency=2 WHERE name="alcohol"')
+    # d.cursor.execute('UPDATE Categories SET hide=0')
     #d.cursor.execute('UPDATE Transactions SET note="" WHERE transaction_id=305')
-    #d.cursor.execute('UPDATE Transactions SET sign="+" WHERE transaction_id=239')
+    # d.cursor.execute('UPDATE Transactions SET sum=38.3 WHERE transaction_id=328')
     # d.cursor.execute('ALTER TABLE Categories ADD hide INTEGER DEFAULT 0;')
     # d.cursor.execute('DELETE FROM Categories WHERE category_id>=45')
     # d.cursor.execute('DELETE FROM Transactions WHERE transaction_id>=316')
