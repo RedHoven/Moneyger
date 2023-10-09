@@ -1,11 +1,16 @@
 # Moneyger
-Terminal app to keep track of your personal spendings and have a FULL access 
-to all your entries. 
+Terminal app to keep track of your personal spendings. Enjoy having full access 
+to all your data. 
 
-The app is written with python curses and SQLite database. 
+The app is written with python curses, uses SQLite database. 
 
-The responsibilities of the main classes are below:
+Launch by running 
+```
+python main.py
+```
+
 ---------------------------------------------------------
+## The responsibilities of the main classes
 ### App
 - inits the app, state manager, responsible for running the app, does actions based on a current state
 
