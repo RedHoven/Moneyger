@@ -12,6 +12,8 @@ Built with the Python `curses` library and an SQLite database.
 
 To start adding your transactions, enter the amount and press `Enter`. You can also add a description, category, and date. The app will automatically save your data to the database. To change the category, date, or description, navigate to the line and press `i`. Press `Enter` to save changes, and press `Enter` again to submit the transaction.
 
+Use arrows `↑`, `↓` to navigate between transaction metadata and `←`,`→` to scroll between differnet categories/dates.
+
 To switch to the analysis screen, press `s` (stats). Here you can see your spending by category, date, and other statistics. You can return to the transactions screen by pressing `t` (transactions).
 
 To exit the app, press `q` (quit).
