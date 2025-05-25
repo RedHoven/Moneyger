@@ -15,6 +15,7 @@ class App:
         curses.noecho()
         curses.cbreak()                 # read input without Enter 
         self.stdscr.keypad(True)        # enable special chars
+        self.num_recent_transactions = 5
         
         # Other   
         self.init_colors()
@@ -50,7 +51,9 @@ class App:
             
         if status == AppState.MAIN:
             best_category = self.db.get_best_category()
-            recent_transactions = self.get_n_recent_transaction()
+            if best_category is None:
+                best_category = 'Uncategorized'
+            recent_transactions = self.get_n_recent_transaction(self.num_recent_transactions)
             self.sm.shared_state.recent_transactions = recent_transactions
             self.sm.shared_state.transaction.category = best_category
             

@@ -61,7 +61,8 @@ class ExtendedMainScreen(Screen):
     def show_recent_transactions(self):
         r,c = 2,1
         recent_ts = self.shared_state.recent_transactions
-        for i in range(self.num_recent):
+        num_to_show = min(self.num_recent, len(recent_ts))
+        for i in range(num_to_show):
             self.recent_transactions_win.addstr(r+i,c, 
                                                 self.format_transaction_str(recent_ts[i].to_table()))
             
@@ -69,8 +70,8 @@ class ExtendedMainScreen(Screen):
         r,c = 1,1
         self.info_win.addstr(r+1,c,'[↑][↓]  to edit spending info')
         self.info_win.addstr(r+2,c,'[←][→]  to alter category/date')
-        self.info_win.addstr(r+3,c,'[i]     to edit date/note')
-        self.info_win.addstr(r+4,c,'[Enter] to add transaction')
+        self.info_win.addstr(r+3,c,'[i]     to edit')
+        self.info_win.addstr(r+4,c,'[Enter] to confirm/add')
         
             
     def format_transaction_str(self, t_data):

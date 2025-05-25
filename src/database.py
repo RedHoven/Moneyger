@@ -4,6 +4,7 @@ import sqlite3
 from sqlite3 import Error
 import pandas as pd
 from utils import DATE_FORMAT
+import argparse
 
 class Transaction:
     
@@ -142,12 +143,15 @@ class Database:
         c = self.cursor
         c.execute("UPDATE Categories SET frequency=0")
         c.execute("DELETE FROM Transactions")
+        c.execute("DELETE FROM Categories")
         self.connection.commit()
 
     def get_best_category(self):
         c = self.cursor
         c.execute("SELECT * FROM Categories ORDER BY frequency DESC")
         categories = c.fetchall()
+        if len(categories) == 0 or categories[0][2] == 0:
+            return None
         best_one = categories[0][1]
         return best_one
 
@@ -168,18 +172,24 @@ class Database:
 
 
 if __name__ == "__main__":
-    d = Database()
-    # d.clear_tables()
-    # d.update_categories(['groceries','restaurants','presents', 'salary', 'home', 'beauty', 'investments'])
-    # d.connection.commit()
-    # d.cursor.execute('UPDATE Categories SET frequency=2 WHERE name="alcohol"')
-    # d.cursor.execute('UPDATE Categories SET hide=0')
-    #d.cursor.execute('UPDATE Transactions SET note="" WHERE transaction_id=305')
-    # d.cursor.execute('UPDATE Transactions SET sum=38.3 WHERE transaction_id=328')
-    # d.cursor.execute('ALTER TABLE Categories ADD hide INTEGER DEFAULT 0;')
-    # d.cursor.execute('DELETE FROM Categories WHERE category_id>=45')
-    # d.cursor.execute('DELETE FROM Transactions WHERE transaction_id>=316')
-    # d.cursor.execute('SELECT * FROM Transactions WHERE transaction_id>=316')
-    # d.connection.commit()
-    # print(d.transaction_list_to_frame())
-    print(d.transaction_list_to_frame())
+    parser = argparse.ArgumentParser(description='Moneyger Database Utility')
+    parser.add_argument('--init', action='store_true', help='Initialize the database')
+    parser.add_argument('--clear', action='store_true', help='Clear all transactions and categories')
+    parser.add_argument('--show', action='store_true', help='Show all transactions in a table format')
+    args = parser.parse_args()
+    if args.clear:
+        d = Database()
+        d.clear_tables()
+        print("All transactions and categories cleared.")
+        exit(0)
+
+    if args.init:
+        d = Database()
+        d.create_tables()
+        print("Database initialized.")
+        exit(0)
+
+    if args.show:
+        d = Database()
+        print(d.transaction_list_to_frame())
+        exit(0)
