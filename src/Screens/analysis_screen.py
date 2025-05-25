@@ -108,7 +108,10 @@ class AnalysisScreen(Screen):
         self.analysis_screen.addstr(r+15,c+(self.main_width-len(avg_per_month_txt))//2, avg_per_month_txt)
         self.analysis_screen.addstr(r+17,c+(self.main_width-center_block_width)//2,fill_space(f'month',20)+f'EUR')
         for i in range(6):
-            self.analysis_screen.addstr(r+18+i,c+(self.main_width-center_block_width)//2,fill_space(f'{spendings_per_month[5-i][0]}',20)+f'{round(spendings_per_month[5-i][1],2)}')
+            if i >= len(spendings_per_month):
+                self.analysis_screen.addstr(r+18+i,c+(self.main_width-center_block_width)//2,fill_space('N/A',20)+'N/A')
+            else:
+                self.analysis_screen.addstr(r+18+i,c+(self.main_width-center_block_width)//2,fill_space(f'{spendings_per_month[5-i][0]}',20)+f'{round(spendings_per_month[5-i][1],2)}')
                 
     def handle_input(self):
         key = self.analysis_screen.getch()

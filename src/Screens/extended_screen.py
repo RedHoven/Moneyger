@@ -61,7 +61,8 @@ class ExtendedMainScreen(Screen):
     def show_recent_transactions(self):
         r,c = 2,1
         recent_ts = self.shared_state.recent_transactions
-        for i in range(self.num_recent):
+        num_to_show = min(self.num_recent, len(recent_ts))
+        for i in range(num_to_show):
             self.recent_transactions_win.addstr(r+i,c, 
                                                 self.format_transaction_str(recent_ts[i].to_table()))
             
