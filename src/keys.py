@@ -1,3 +1,5 @@
+# The file defining key mappings for the application.
+
 KEYS = {
     'minus' : 45,
     'plus' : 61,

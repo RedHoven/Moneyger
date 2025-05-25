@@ -11,7 +11,7 @@ class AnalysisScreen(Screen):
     def __init__(self, stdscr, shared_state):
         super().__init__(stdscr, shared_state)
         
-        # ingerit properties
+        # inherit properties
         self.shared_state = shared_state
         self.logger = self.shared_state.get_logger()
         
@@ -91,7 +91,7 @@ class AnalysisScreen(Screen):
         
         
         self.analysis_screen.addstr(r+6,c+1,'Spent per category last month')
-        self.analysis_screen.addstr(r+6,c+blocksize+1,'Average spent per category')
+        self.analysis_screen.addstr(r+6,c+blocksize+1,'Average spent per category per month')
         
         top_exp = list(zip(data_prev["top_spendings"].keys(), data_prev["top_spendings"].values()))
         top_num = len(top_exp)

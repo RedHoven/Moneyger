@@ -56,7 +56,8 @@ class App:
             
         if status == AppState.SAVE_TRANSACTION:
             transaction = state.get_transaction()
-            self.logger.info('saving transaction')
+            self.logger.info('saving transaction to db')
+            self.logger.info(f'categories: {state.get_categories()}!')
             self.sync_categories(state.get_categories())
             self.db.add_transaction(transaction)
             recent_transactions = self.get_n_recent_transaction()

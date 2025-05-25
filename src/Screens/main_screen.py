@@ -311,6 +311,7 @@ class TransactionScreen(Screen):
                     date,
                     note
                 )
+                transaction.set_str(string)
                 self.shared_state.set_transaction(transaction)
                 self.shared_state.set_state(AppState.SAVE_TRANSACTION)
                 self.shared_state.set_categories(self.CATEGORIES)

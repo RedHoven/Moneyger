@@ -179,5 +179,7 @@ if __name__ == "__main__":
     # d.cursor.execute('ALTER TABLE Categories ADD hide INTEGER DEFAULT 0;')
     # d.cursor.execute('DELETE FROM Categories WHERE category_id>=45')
     # d.cursor.execute('DELETE FROM Transactions WHERE transaction_id>=316')
-    d.connection.commit()
+    # d.cursor.execute('SELECT * FROM Transactions WHERE transaction_id>=316')
+    # d.connection.commit()
     # print(d.transaction_list_to_frame())
+    print(d.transaction_list_to_frame())
