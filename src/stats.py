@@ -10,8 +10,8 @@ class Statistics:
         self.records = self.db.transaction_list_to_frame()
         self.records['month'] = self.records['date'].str.split("-").apply(lambda x: x[0]+'-'+x[1])
         
-        # now = datetime.now()
-        now = datetime(2023, 10, 1)  # For testing purposes, set a fixed date
+        now = datetime.now()
+        # now = datetime(2023, 10, 1)  # For testing purposes, set a fixed date
         self.current_month:  str = now.strftime("%Y-%m")
         self.previous_month: str = self.get_month(backdrop=1)
         
