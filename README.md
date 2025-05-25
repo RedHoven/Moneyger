@@ -44,29 +44,34 @@ To exit the app, press `q` (quit).
 
 5. If the app suddenly breaks or something is not working properly, check the logs in moneyger.log file.
 
-### Project Overview
-📁 Project Structure
-/src
-│
-├── app.py                # Initializes and runs the core application logic
-├── main.py               # Entry point: boots the app and starts the main loop
-│
-├── state.py              # Defines the shared state of the application
-├── state_manager.py      # Controls navigation between screens based on current state
-│
-├── screen_manager.py     # Builds and manages the different screens
-├── keys.py               # Centralized key mappings for input handling
-│
-├── database.py           # Handles all data persistence and retrieval logic
-├── stats.py              # Gathers and processes database stats for visual display
-├── parsers.py            # Parses incoming input data into structured form
-│
-├── screens/              # All screen definitions
-│   ├── screen.py             # Abstract base class for all screens
-│   ├── main_screen.py        # Home screen for general interactions
-│   ├── extended_screen.py    # Detailed transaction screen with history and guidance
-│   └── analysis_screen.py    # Visualizes data insights and trends
+### 📁 Project Structure
 
+📂 `src/`
+
+* `app.py` — Initializes and runs the core application logic
+
+* `main.py` — Entry point: boots the app and starts the main loop
+
+* `state.py` — Defines the shared state of the application
+
+* `state_manager.py` — Controls navigation between screens based on current state
+
+* `screen_manager.py` — Builds and manages the different screens
+
+* `keys.py` — Centralized key mappings for input handling
+
+* `database.py` — Handles all data persistence and retrieval logic
+
+* `stats.py` — Gathers and processes database stats for visual display
+
+* `parsers.py` — Parses incoming input data into structured form
+
+#### 📂 `screens/` — All screen definitions:
+
+* `screen.py` — Abstract base class for all screens
+* `main_screen.py` — Home screen for general interactions
+* `extended_screen.py` — Transaction screen with history and guidance
+* `analysis_screen.py` — Visualizes data insights and trends
 
 ### Component Responsibilities
 App (`app.py`)
