@@ -8,13 +8,13 @@ from parsers import *
 from keys import KEYS
 from database import Database, Transaction
 from state import AppState, SharedState
+from utils import DATE_FORMAT
 
 class MainScreen(Screen):
     def __init__(self, stdscr, shared_state: SharedState):
         super().__init__(stdscr, shared_state)
         
         self.logger = shared_state.get_logger()
-        self.transaction = shared_state.get_transaction()
         self.shared_state = shared_state
         self.stdscr = stdscr
         
@@ -40,7 +40,7 @@ class MainScreen(Screen):
         self.black_on_white = curses.color_pair(6)
 
     def initialize(self):
-        if self.main_width > self.num_cols or self.main_height > self.num_rows:
+        if self.main_width*3+4 > self.num_cols or self.main_height > self.num_rows:
             self.logger.info('Closing the app because of too small window')
             self.shared_state.set_state(AppState.QUIT)
             return self.shared_state
@@ -52,7 +52,7 @@ class MainScreen(Screen):
         
         # self.main_window.keypad(True)        # enable special chars for main win
         self.input_win = self.main_window.derwin(1, self.main_width-2, 2, 1)
-        self.shared_state.set_state(AppState.MAIN_SCREEN)
+        self.shared_state.set_state(AppState.MAIN)
         return self.shared_state
     
     def draw(self):
@@ -83,7 +83,7 @@ class MainScreen(Screen):
             linewin.refresh()
     
     def sum_handler(self, key, highlight=False):
-        t: Transaction = self.transaction
+        t: Transaction = self.shared_state.transaction
         sign: str = t.sign
         sum: str = str(t.sum)
             
@@ -97,10 +97,12 @@ class MainScreen(Screen):
         
         while True:            
             if (key == KEYS['enter'] or key in KEYS['down']) and not sum=='':
-                self.transaction.sign = sign
-                self.transaction.sum = float(sum)
+                self.shared_state.transaction.sign = sign
+                self.shared_state.transaction.sum = float(sum)
+                self.shared_state.transaction.string = string
                 self.shared_state.current_key = key
-                self.shared_state.set_state(AppState.TRANSACTION_SCREEN)
+                if self.shared_state.get_state() == AppState.MAIN:
+                    self.shared_state.set_state(AppState.WELCOME)
                 return
             
             if key == KEYS['quit']:
@@ -120,17 +122,6 @@ class MainScreen(Screen):
                 self.update_linewin(self.input_win, self.cut_string(string))
             self.stdscr.refresh()
             key = self.stdscr.getch()
-    
-class ExtendedMainScreen(Screen):
-    def __init__(self, stdscr, shared_state):
-        super().__init__(stdscr, shared_state)
-        
-        # side space
-        self.side_rows = (self.num_rows-self.main_height)//2
-        self.side_cols = (self.num_cols-self.main_width)//2   
-        
-        self.recent_transactions_win = curses.newwin(self.side_height, self.side_width,
-                                                self.side_height, self.side_width + self.main_width) 
 
 class WelcomeScreen(Screen):
     def __init__(self, stdscr, main_screen):
@@ -156,15 +147,17 @@ class WelcomeScreen(Screen):
     def handle_input(self):
         super().handle_input()
         key = self.stdscr.getch()
+        if key == KEYS['stats']:
+            self.shared_state.set_state(AppState.ANALYSIS)
+            return self.shared_state
         return self.welcome(key)
 
 class TransactionScreen(Screen):
     
-    DATE_FORMAT = "%d-%m-%Y"
-    
-    def __init__(self, stdscr, main_screen):
-        super().__init__(stdscr, main_screen.shared_state)
-        self.ms = main_screen
+    def __init__(self, stdscr, ext_main_screen):
+        super().__init__(stdscr, ext_main_screen.shared_state)
+        self.ems = ext_main_screen
+        self.ms = self.ems.ms
         self.main_window = self.ms.main_window
         self.shared_state = self.ms.shared_state
         self.t: Transaction = self.shared_state.get_transaction()
@@ -193,6 +186,7 @@ class TransactionScreen(Screen):
         self.row_s = self.ms.row_s
         
     def draw(self):
+        self.ems.draw()
         self.input_win = self.ms.input_win
         self.category_win = self.main_window.derwin(1, self.main_width-2, 3, 1)
         self.date_win = self.main_window.derwin(1, self.main_width-2, 4, 1)
@@ -204,15 +198,16 @@ class TransactionScreen(Screen):
         self.stdscr.clear()
         self.stdscr.bkgd(' ', curses.color_pair(3))
         self.details_win.box()
-        if self.shared_state.get_state() == AppState.TRANSACTION_SCREEN:
+        if self.shared_state.get_state() == AppState.TRANSACTION:
             self.print_request_message('Add Request')
-        elif self.shared_state.get_state() == AppState.TRANSACTION_SCREEN_SAVED:
+        elif self.shared_state.get_state() == AppState.SAVE_TRANSACTION:
             self.print_request_message('Saved!')
         
+        self.t = self.shared_state.transaction
         sign = self.t.sign
         sum = self.t.sum
         date = self.t.date
-        date_str = self.t.date.strftime(self.DATE_FORMAT)
+        date_str = self.t.date.strftime(DATE_FORMAT)
         string = sign + str(sum)
         
         # set the most probable category
@@ -255,12 +250,12 @@ class TransactionScreen(Screen):
         self.details_win.addstr(r,c, message)
         self.details_win.refresh()
             
-    def draw_on_win(self,key, win, processor,string):
+    def draw_on_win(self,key, win, processor,string,refresh=True):
         if key == KEYS['delete']:
             new_str = processor(string,chr(key),True)
         else:
             new_str = processor(string,chr(key))
-        self.ms.update_linewin(win, new_str)
+        self.ms.update_linewin(win, new_str,refresh=refresh)
         return new_str
     
     def refresh_pad(self, pad, focus, type='focused', direction='down', x= None, y= None):    
@@ -301,8 +296,8 @@ class TransactionScreen(Screen):
         category = self.t.category
         date = self.t.date
         note = self.t.note
-        date_str = self.t.date.strftime(self.DATE_FORMAT)
-        string = sign + str(sum)
+        date_str = self.t.date.strftime(DATE_FORMAT)
+        string = self.t.string
         
         while True:
             if key == KEYS['enter']:
@@ -316,6 +311,7 @@ class TransactionScreen(Screen):
                     date,
                     note
                 )
+                transaction.set_str(string)
                 self.shared_state.set_transaction(transaction)
                 self.shared_state.set_state(AppState.SAVE_TRANSACTION)
                 self.shared_state.set_categories(self.CATEGORIES)
@@ -330,7 +326,15 @@ class TransactionScreen(Screen):
                 return self.shared_state              
             elif key == KEYS['quit']:
                 self.shared_state.set_state(AppState.QUIT)
-                return self.shared_state  
+                return self.shared_state 
+            
+            elif key == KEYS['stats']:
+                self.shared_state.set_state(AppState.ANALYSIS)
+                self.ems.info_win.clear()
+                self.ems.recent_transactions_win.clear()
+                self.main_window.clear()
+                self.stdscr.refresh()
+                return self.shared_state
             
             elif key in KEYS['up/down']:
                 self.log.info('Up/down')
@@ -357,8 +361,10 @@ class TransactionScreen(Screen):
             else:
                 if focus == 0:
                     self.ms.sum_handler(key, True)
-                    string = self.shared_state.transaction.sign + str(self.shared_state.transaction.sum)
+                    string = self.shared_state.transaction.string
                     down = self.shared_state.current_key in KEYS['down']
+                    
+                    self.print_request_message('Press [Enter] to save')
                     
                     # update pads
                     focus_pad.move(2,0)
@@ -370,6 +376,7 @@ class TransactionScreen(Screen):
                     unfocused_pad.addstr(2,0,string)
                     
                     # turn off highlight
+                    self.ms.update_linewin(self.input_win, string, refresh=True)
                     self.input_win.bkgd(' ',self.white_on_black)
                     self.input_win.refresh()
                     
@@ -388,7 +395,7 @@ class TransactionScreen(Screen):
                     
                     if previous_category != category:
                         self.category_win.bkgd(' ',self.white_on_black)
-                        self.category_win.refresh()
+                        # self.category_win.refresh()
                         
                         focus_pad.move(3,0)
                         focus_pad.clrtoeol()
@@ -406,11 +413,11 @@ class TransactionScreen(Screen):
                     date_str = self.date_handler(date_str, key, focus_pad)
                     if date_str is None:
                         return self.shared_state
-                    date = datetime.strptime(date_str, self.DATE_FORMAT)
+                    date = datetime.strptime(date_str, DATE_FORMAT)
  
                     if previous_date != date_str:
                         self.date_win.bkgd(' ',self.white_on_black)
-                        self.date_win.refresh()
+                        # self.date_win.refresh()
                         
                         focus_pad.move(4,0)
                         focus_pad.clrtoeol()
@@ -419,6 +426,7 @@ class TransactionScreen(Screen):
                         unfocused_pad.move(4,0)
                         unfocused_pad.clrtoeol()
                         unfocused_pad.addstr(4,0,date_str)
+                        
                         self.ms.update_linewin(self.date_win, date_str, refresh=False)
                         self.refresh_pad(focus_pad, focus)
                 
@@ -507,18 +515,17 @@ class TransactionScreen(Screen):
     def date_handler(self, date_str, key, focus_pad):
         if key in KEYS['right']:
             #next day    
-            this_day = datetime.strptime(date_str, self.DATE_FORMAT)
+            this_day = datetime.strptime(date_str, DATE_FORMAT)
             this_day += timedelta(days=1)
-            date_str = this_day.strftime(self.DATE_FORMAT)
-            date_str = self.draw_on_win(key,self.date_win,update_date,date_str)
+            date_str = this_day.strftime(DATE_FORMAT)
+            date_str = self.draw_on_win(key,self.date_win,update_date,date_str,refresh=False)
             
         elif key in KEYS['left']:
             #prev day
-            this_day = datetime.strptime(date_str, self.DATE_FORMAT)
+            this_day = datetime.strptime(date_str, DATE_FORMAT)
             this_day -= timedelta(days=1)
-            date_str = this_day.strftime(self.DATE_FORMAT)
-            date_str = self.draw_on_win(key,self.date_win,update_date,date_str)
-                   
+            date_str = this_day.strftime(DATE_FORMAT)
+            date_str = self.draw_on_win(key,self.date_win,update_date,date_str,refresh=False)
         elif key in KEYS['insert']:
             self.print_request_message('Type in the date!')
             date_str = self.create_date(self.date_win, focus_pad)
@@ -540,7 +547,7 @@ class TransactionScreen(Screen):
                 # checking if format matches the date_str
                 right_format = True
                 try:
-                    right_format = bool(datetime.strptime(test_str, self.DATE_FORMAT))
+                    right_format = bool(datetime.strptime(test_str, DATE_FORMAT))
                     self.log.info('date_str entered succesfylly')
                     
                     return date_str

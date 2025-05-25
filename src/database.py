@@ -3,17 +3,18 @@ import logging
 import sqlite3
 from sqlite3 import Error
 import pandas as pd
-
+from utils import DATE_FORMAT
 
 class Transaction:
+    
     def __init__(self, sign: str, sum: float, category: str, date: datetime, note: str) -> None:
         self.sign = sign
         self.sum = sum
         self.category = category
         self.date = date
         self.note = note
-        
         self.log = None
+        self.string = None
         
     def init_logger(self, logger):
         self.log = logger
@@ -25,6 +26,18 @@ class Transaction:
                 "category: " + self.category + '\n' + \
                 "date: " + str(self.date) + '\n' + \
                 "note: " + self.note
+                
+    def to_rowstr(self):
+        return f"{self.sign+str(self.sum)}\t {self.category}\t {self.date.strftime('%d-%m')}"
+    
+    def to_table(self):
+        return  self.sign+str(self.sum),\
+                self.category,\
+                self.date.strftime('%d-%m')
+                
+    def set_str(self, string):
+        self.string = string
+    
 
 class Database:
     def __init__(self):
@@ -83,7 +96,19 @@ class Database:
             if db_cat_record[1] not in list:
                 self.lock_category(db_cat_record[1])
             
-                
+    def get_recent_transactions(self, n):
+        transactions = []
+        c = self.cursor
+        c.execute('SELECT * FROM Transactions ORDER BY transaction_id DESC LIMIT ?;',(n,))
+        fetched = c.fetchall()
+        
+        for f in fetched:
+            transactions.append(
+                Transaction(f[1], f[2], f[3], 
+                            datetime.strptime(f[4].split()[0], '%Y-%m-%d'), 
+                            f[5])
+            )
+        return transactions
         
 
     def get_categories(self):
@@ -147,12 +172,14 @@ if __name__ == "__main__":
     # d.clear_tables()
     # d.update_categories(['groceries','restaurants','presents', 'salary', 'home', 'beauty', 'investments'])
     # d.connection.commit()
-    #d.cursor.execute('UPDATE Categories SET frequency=11 WHERE name="coffee"')
-    d.cursor.execute('UPDATE Categories SET frequency=1 WHERE name="sport"')
+    # d.cursor.execute('UPDATE Categories SET frequency=2 WHERE name="alcohol"')
+    # d.cursor.execute('UPDATE Categories SET hide=0')
     #d.cursor.execute('UPDATE Transactions SET note="" WHERE transaction_id=305')
-    #d.cursor.execute('UPDATE Transactions SET sign="+" WHERE transaction_id=239')
+    # d.cursor.execute('UPDATE Transactions SET sum=38.3 WHERE transaction_id=328')
     # d.cursor.execute('ALTER TABLE Categories ADD hide INTEGER DEFAULT 0;')
     # d.cursor.execute('DELETE FROM Categories WHERE category_id>=45')
     # d.cursor.execute('DELETE FROM Transactions WHERE transaction_id>=316')
-    d.connection.commit()
+    # d.cursor.execute('SELECT * FROM Transactions WHERE transaction_id>=316')
+    # d.connection.commit()
     # print(d.transaction_list_to_frame())
+    print(d.transaction_list_to_frame())

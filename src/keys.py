@@ -1,3 +1,5 @@
+# The file defining key mappings for the application.
+
 KEYS = {
     'minus' : 45,
     'plus' : 61,
@@ -10,5 +12,8 @@ KEYS = {
     'right/left': [260, 261, 68, 67],
     'left': [260, 68],
     'right': [261, 67],
-    'quit': ord('q')
+    'quit': ord('q'),
+    'stats':ord('s'),
+    'transaction':ord('t'),
+    'profile':ord('p')
 }
