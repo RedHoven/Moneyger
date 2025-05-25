@@ -70,8 +70,8 @@ class ExtendedMainScreen(Screen):
         r,c = 1,1
         self.info_win.addstr(r+1,c,'[↑][↓]  to edit spending info')
         self.info_win.addstr(r+2,c,'[←][→]  to alter category/date')
-        self.info_win.addstr(r+3,c,'[i]     to edit date/note')
-        self.info_win.addstr(r+4,c,'[Enter] to add transaction')
+        self.info_win.addstr(r+3,c,'[i]     to edit')
+        self.info_win.addstr(r+4,c,'[Enter] to confirm/add')
         
             
     def format_transaction_str(self, t_data):
