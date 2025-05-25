@@ -5,7 +5,7 @@ The app is written with python curses library and SQLite database.
 
 ### Preview
 
-![Moneyger Preview](https://raw.githubusercontent.com/redhoven/moneyger/main/preview/preview-grid.png)
+![Moneyger Preview](https://raw.githubusercontent.com/redhoven/moneyger/master/preview/preview-grid.png)
 <!-- ![Moneyger Preview](preview/preview-grid.png) -->
 
 To start adding your transactions, enter the amount and press `Enter`. You can also add a description, category, and date. The app will automatically save your data to the database. To change the category, date or description, navigate to the line and press `i`. Press `Enter` to save changes and press `Enter` again to submit the transaction.
