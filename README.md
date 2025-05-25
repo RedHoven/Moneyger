@@ -1,69 +1,68 @@
 # Moneyger
-Terminal app to keep track of your personal spendings and have a completely full access to all your data. 
 
-The app is written with python curses library and SQLite database. 
+A terminal app to track your personal spending with complete control over your data.
+
+Built with the Python `curses` library and an SQLite database.
 
 ### Preview
 
 ![Moneyger Preview](https://raw.githubusercontent.com/redhoven/moneyger/master/preview/preview-grid.png)
+
 <!-- ![Moneyger Preview](preview/preview-grid.png) -->
 
-To start adding your transactions, enter the amount and press `Enter`. You can also add a description, category, and date. The app will automatically save your data to the database. To change the category, date or description, navigate to the line and press `i`. Press `Enter` to save changes and press `Enter` again to submit the transaction.
+To start adding your transactions, enter the amount and press `Enter`. You can also add a description, category, and date. The app will automatically save your data to the database. To change the category, date, or description, navigate to the line and press `i`. Press `Enter` to save changes, and press `Enter` again to submit the transaction.
 
-To switch to the analysis screen, press `s` (stats). Here you can see your spendings by categories, dates, and other statistics. You con return to the transactions screen by pressing `t` (transaction).
+To switch to the analysis screen, press `s` (stats). Here you can see your spending by category, date, and other statistics. You can return to the transactions screen by pressing `t` (transactions).
 
 To exit the app, press `q` (quit).
 
-### How to use?
+### How to Use
+
 1. Clone the repository:
+
    ```bash
-   git clone
+   git clone https://github.com/redhoven/moneyger.git
    ```
 
 2. Navigate to the project directory:
+
    ```bash
-    cd moneyger
-    ```
+   cd moneyger
+   ```
 
 3. Install the required dependencies:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-    pip install -r requirements.txt
-    ```
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   pip install -r requirements.txt
+   ```
 
 4. Run the app in the terminal:
-    ```bash
-    # Initialize the database when running for the first time
-    python src/database.py --init 
-    python src/main.py
-    ```
 
-> [!WARNING]  
-> Make sure your terminal is sufficiently large to display the app properly. The recommended minimum size is 100x30 characters to be able to access all the screens. The app will not start if the terminal window is too small.
+   ```bash
+   # Initialize the database when running for the first time
+   python src/database.py --init
+   python src/main.py
+   ```
 
-5. If the app suddenly breaks or something is not working properly, check the logs in moneyger.log file.
+> \[!WARNING]
+> Make sure your terminal is large enough to display the app properly. The recommended minimum size is 100x30 characters. The app will not start if the terminal window is too small.
+
+5. If the app crashes or something isn't working properly, check the logs in the `moneyger.log` file.
 
 ### 📁 Project Structure
 
 📂 `src/`
 
 * `app.py` — Initializes and runs the core application logic
-
 * `main.py` — Entry point: boots the app and starts the main loop
-
 * `state.py` — Defines the shared state of the application
-
 * `state_manager.py` — Controls navigation between screens based on current state
-
 * `screen_manager.py` — Builds and manages the different screens
-
 * `keys.py` — Centralized key mappings for input handling
-
 * `database.py` — Handles all data persistence and retrieval logic
-
 * `stats.py` — Gathers and processes database stats for visual display
-
 * `parsers.py` — Parses incoming input data into structured form
 
 #### 📂 `screens/` — All screen definitions:
@@ -74,23 +73,25 @@ To exit the app, press `q` (quit).
 * `analysis_screen.py` — Visualizes data insights and trends
 
 ### Component Responsibilities
-App (`app.py`)
-Orchestrates the entire application lifecycle. Initializes core modules and performs actions based on current shared state.
 
-State Manager (`state_manager.py`)
-Handles screen transitions by reacting to updates in the shared state.
+**App (`app.py`)**
+Orchestrates the entire application lifecycle. Initializes core modules and performs actions based on the current shared state.
 
-Shared State (`state.py`)
-Central storage for app state, enabling consistent and reactive behavior across screens.
+**State Manager (`state_manager.py`)**
+Handles screen transitions by monitoring updates in the shared state.
 
-Screen (`screens/*.py`)
+**Shared State (`state.py`)**
+Central storage for app state, responsible for consistent and reactive behavior across screens.
+
+**Screen (`screens/*.py`)**
 Each screen:
-- Renders its UI content
-- Handles user key inputs
-- Returns a potential new state
 
-Statistics (stats.py)
-Pulls data from the database and transforms it into display-ready insights.
+* Renders its UI content
+* Handles user key inputs
+* Returns a potential new state
 
-Database (database.py)
+**Statistics (`stats.py`)**
+Pulls data from the database and transforms it into processed insights.
+
+**Database (`database.py`)**
 Low-level data layer responsible for CRUD operations and persistent storage.
